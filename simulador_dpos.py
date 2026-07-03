@@ -534,11 +534,11 @@ if __name__ == "__main__":
         sys.exit(0)
 
     grade = {
-    "n_holders": [200, 500, 1000],
-    "n_candidatos": [1000, 2000, 10000],  # >= max(tamanho_comite) = 101
-    "tamanho_comite": [21, 54, 210],
-    "vantagem_incumbencia": [0.0, 0.5, 1.0],
-    "n_rodadas": [2, 5, 10],
+        "n_holders": [200, 500, 1000],
+        "n_candidatos": [50, 100, 150],
+        "tamanho_comite": [21],
+        "vantagem_incumbencia": [0.0, 0.5, 1.0],
+        "n_rodadas": [2, 5, 10],
     }
 
     cenarios = gerar_cenarios(
