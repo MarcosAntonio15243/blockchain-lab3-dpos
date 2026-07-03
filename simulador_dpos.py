@@ -69,7 +69,7 @@ import sys
 from dataclasses import dataclass, fields
 from datetime import datetime
 from itertools import product
-from typing import Callable, Sequence
+from typing import Callable
 
 import numpy as np
 
@@ -343,7 +343,7 @@ def permanencia_media(ctx: Contexto) -> float:
     if not historico:
         return 0.0
 
-    eleitos_atuais = set(ctx.eleitos)
+    eleitos_atuais = _eleitos_holders(historico[-1])
     if not eleitos_atuais:
         return 0.0
 
@@ -353,7 +353,7 @@ def permanencia_media(ctx: Contexto) -> float:
         permanencia = 1
         # Percorre o histórico (exceto a rodada atual) de trás para frente
         for rodada in reversed(historico[:-1]):
-            if delegado in rodada.eleitos:
+            if delegado in _eleitos_holders(rodada):
                 permanencia += 1
             else:
                 break
@@ -373,12 +373,13 @@ def diversidade_acumulada(ctx: Contexto) -> float:
     ocupantes = set()
 
     for rodada in ctx.historico:
-        ocupantes.update(rodada["eleitos"])
+        ocupantes.update(_eleitos_holders(rodada))
 
     T = len(ctx.historico)
     k = len(ctx.eleitos)
 
     return len(ocupantes) / (k * T) if k > 0 else 0.0
+
 def _eleitos_holders(rodada: dict) -> set:
     """Identidade (holder) dos eleitos de uma rodada, robusta a mudancas no pool."""
     return set(rodada["pool"][rodada["eleitos"]].tolist())
@@ -532,19 +533,24 @@ if __name__ == "__main__":
         print(f"{len(out)} linhas de resultado -> {sys.argv[2]}")
         sys.exit(0)
 
-    # Autoteste do Gini
-    assert abs(_gini([1, 1, 1, 1]) - 0.0) < 1e-9
-    assert abs(_gini([0, 0, 0, 1]) - 0.75) < 1e-9
-    print("Autoteste do Gini: OK")
+    grade = {
+    "n_holders": [200, 500, 1000],
+    "n_candidatos": [1000, 2000, 10000],  # >= max(tamanho_comite) = 101
+    "tamanho_comite": [21, 54, 210],
+    "vantagem_incumbencia": [0.0, 0.5, 1.0],
+    "n_rodadas": [2, 5, 10],
+    }
 
-    # Exemplo G1 (apatia): 2 basicos + turnout, Gini nas 3 camadas
-    grade = {"n_holders": [200, 500, 1000],
-             "distribuicao": ["pareto", "lognormal"],
-             "turnout": [0.1, 0.5, 1.0]}
-    cen = gerar_cenarios(grade, metricas=["gini"],
-                         camadas_alvo=["stake", "eleito", "produzido"],
-                         grupo="G1", patologia="apatia_do_eleitor",
-                         n_runs=20, seed_base=0)
-    salvar_cenarios(cen, "cenarios_exemplo.csv")
-    res = rodar_csv("cenarios_exemplo.csv", "resultados_exemplo.csv")
-    print(f"{len(cen)} cenarios -> cenarios_exemplo.csv ; {len(res)} resultados -> resultados_exemplo.csv")
+    cenarios = gerar_cenarios(
+        grade,
+        metricas=["rotatividade", "persistencia", "permanencia_media", "diversidade"],
+        camadas_alvo=["stake", "eleito", "produzido"],
+        grupo="G11",
+        patologia="entrincheiramento",
+        n_runs=30,
+        seed_base=42,
+    )
+
+    salvar_cenarios(cenarios, "cenarios.csv")
+    res = rodar_csv("cenarios.csv", "resultados.csv")
+    print(f"{len(cenarios)} cenarios -> cenarios.csv ; {len(res)} resultados -> resultados.csv")
