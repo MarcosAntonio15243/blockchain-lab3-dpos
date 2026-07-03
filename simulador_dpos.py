@@ -331,6 +331,54 @@ def palma(ctx: Contexto) -> float:
     """Razao de Palma: share do topo 10% / share dos 40% inferiores."""
     raise NotImplementedError("TODO: razao de Palma")  # TODO
 
+def permanencia_media(ctx: Contexto) -> float:
+    """
+    Tempo médio de permanência dos delegados atualmente eleitos.
+
+    Calcula, para cada delegado eleito na rodada atual, há quantas rodadas
+    consecutivas ele permanece no comitê.
+    """
+    historico = ctx.historico
+
+    if not historico:
+        return 0.0
+
+    eleitos_atuais = set(ctx.eleitos)
+    if not eleitos_atuais:
+        return 0.0
+
+    soma = 0
+
+    for delegado in eleitos_atuais:
+        permanencia = 1
+        # Percorre o histórico (exceto a rodada atual) de trás para frente
+        for rodada in reversed(historico[:-1]):
+            if delegado in rodada.eleitos:
+                permanencia += 1
+            else:
+                break
+        soma += permanencia
+
+    return soma / len(eleitos_atuais)
+
+def diversidade_acumulada(ctx: Contexto) -> float:
+    """
+    Fração de cadeiras historicamente ocupadas por delegados distintos.
+
+        |⋃ A_t| / (kT)
+    """
+    if not ctx.historico:
+        return 0.0
+
+    ocupantes = set()
+
+    for rodada in ctx.historico:
+        ocupantes.update(rodada["eleitos"])
+
+    T = len(ctx.historico)
+    k = len(ctx.eleitos)
+
+    return len(ocupantes) / (k * T) if k > 0 else 0.0
 def _eleitos_holders(rodada: dict) -> set:
     """Identidade (holder) dos eleitos de uma rodada, robusta a mudancas no pool."""
     return set(rodada["pool"][rodada["eleitos"]].tolist())
@@ -373,6 +421,8 @@ METRICAS: dict[str, Callable] = {
     "numero_efetivo": numero_efetivo,
     "entropia_shannon": entropia_shannon,
     "palma": palma,
+    "permanencia_media": permanencia_media,
+    "diversidade": diversidade_acumulada,
     "rotatividade": rotatividade,
     "persistencia": persistencia
 }
