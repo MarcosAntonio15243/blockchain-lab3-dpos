@@ -1,0 +1,28 @@
+# Ambiente virtual
+.venv/
+venv/
+env/
+
+# Bytecode / cache Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Build / empacotamento
+build/
+dist/
+
+# Testes e ferramentas de lint/type-check
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Claude Code (estado local)
+.claude/scheduled_tasks.lock
+
+# Editor / SO
+.vscode/
+.idea/
+.DS_Store
