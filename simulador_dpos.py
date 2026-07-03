@@ -331,6 +331,37 @@ def palma(ctx: Contexto) -> float:
     """Razao de Palma: share do topo 10% / share dos 40% inferiores."""
     raise NotImplementedError("TODO: razao de Palma")  # TODO
 
+def _eleitos_holders(rodada: dict) -> set:
+    """Identidade (holder) dos eleitos de uma rodada, robusta a mudancas no pool."""
+    return set(rodada["pool"][rodada["eleitos"]].tolist())
+
+def rotatividade(ctx: Contexto) -> float:
+    """Taxa de rotatividade media entre rodadas consecutivas:
+    media_t (|A_t Δ A_{t-1}| / k), t = 1..T-1."""
+    hist = ctx.historico
+    if len(hist) < 2:
+        return 0.0
+    k = ctx.cfg.tamanho_comite
+    taxas = []
+    anterior = _eleitos_holders(hist[0])
+    for rodada in hist[1:]:
+        atual = _eleitos_holders(rodada)
+        taxas.append(len(atual.symmetric_difference(anterior)) / k)
+        anterior = atual
+    return float(np.mean(taxas))
+
+def persistencia(ctx: Contexto) -> float:
+    """Persistência: fração de delegados presentes em TODAS as rodadas
+    (|intersecao_t A_t| / k)."""
+    hist = ctx.historico
+    if not hist:
+        return 0.0
+    k = ctx.cfg.tamanho_comite
+    comuns = _eleitos_holders(hist[0])
+    for rodada in hist[1:]:
+        comuns &= _eleitos_holders(rodada)
+    return len(comuns) / k
+
 # A LLM pode ter esquecido de gerar algum
 
 # Registre aqui as metricas implementadas (o CSV usa estes nomes):
@@ -342,6 +373,8 @@ METRICAS: dict[str, Callable] = {
     "numero_efetivo": numero_efetivo,
     "entropia_shannon": entropia_shannon,
     "palma": palma,
+    "rotatividade": rotatividade,
+    "persistencia": persistencia
 }
 
 
